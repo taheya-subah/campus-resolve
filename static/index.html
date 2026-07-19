@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>CampusResolve</title>
+
+    <style>
+        body {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 0 20px;
+            font-family: Arial, sans-serif;
+            background: #f4f6f8;
+            color: #202124;
+        }
+
+        header {
+            margin-bottom: 30px;
+        }
+
+        form,
+        .ticket {
+            padding: 20px;
+            margin-bottom: 20px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+
+        label {
+            display: block;
+            margin-top: 15px;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        input,
+        textarea,
+        select,
+        button {
+            width: 100%;
+            padding: 10px;
+            box-sizing: border-box;
+            font: inherit;
+        }
+
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        button {
+            margin-top: 20px;
+            cursor: pointer;
+        }
+
+        .ticket h3 {
+            margin-top: 0;
+        }
+
+        .ticket-meta {
+            font-size: 14px;
+            color: #555;
+        }
+
+        #message {
+            margin: 15px 0;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>CampusResolve</h1>
+        <p>Report and track campus technology issues.</p>
+    </header>
+
+    <main>
+        <section>
+            <h2>Submit a support ticket</h2>
+
+            <form id="ticket-form">
+                <label for="title">Issue title</label>
+                <input
+                    id="title"
+                    name="title"
+                    type="text"
+                    minlength="3"
+                    maxlength="100"
+                    required
+                >
+
+                <label for="description">Description</label>
+                <textarea
+                    id="description"
+                    name="description"
+                    minlength="10"
+                    maxlength="1000"
+                    required
+                ></textarea>
+
+                <label for="category">Category</label>
+                <select id="category" name="category" required>
+                    <option value="">Select a category</option>
+                    <option value="Network">Network</option>
+                    <option value="Account Access">Account access</option>
+                    <option value="Software">Software</option>
+                    <option value="Equipment">Equipment</option>
+                    <option value="Other">Other</option>
+                </select>
+
+                <label for="location">Location</label>
+                <input
+                    id="location"
+                    name="location"
+                    type="text"
+                    placeholder="For example: Main Library"
+                >
+
+                <button type="submit">Submit ticket</button>
+            </form>
+
+            <p id="message"></p>
+        </section>
+
+        <section>
+            <h2>Submitted tickets</h2>
+            <div id="ticket-list">
+                <p>No tickets have been submitted.</p>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        const form = document.querySelector("#ticket-form");
+        const message = document.querySelector("#message");
+        const ticketList = document.querySelector("#ticket-list");
+
+        async function loadTickets() {
+            const response = await fetch("/tickets");
+            const tickets = await response.json();
+
+            if (tickets.length === 0) {
+                ticketList.innerHTML = "<p>No tickets have been submitted.</p>";
+                return;
+            }
+
+            ticketList.innerHTML = tickets.map(ticket => `
+                <article class="ticket">
+                    <h3>${ticket.title}</h3>
+
+                    <p>${ticket.description}</p>
+
+                    <p class="ticket-meta">
+                        Category: ${ticket.category}<br>
+                        Location: ${ticket.location || "Not provided"}<br>
+                        Status: ${ticket.status}<br>
+                        Priority: ${ticket.priority}
+                    </p>
+                </article>
+            `).join("");
+        }
+
+        form.addEventListener("submit", async event => {
+            event.preventDefault();
+
+            message.textContent = "Submitting ticket...";
+
+            const ticketData = {
+                title: form.title.value,
+                description: form.description.value,
+                category: form.category.value,
+                location: form.location.value || null
+            };
+
+            const response = await fetch("/tickets", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(ticketData)
+            });
+
+            if (!response.ok) {
+                message.textContent =
+                    "The ticket could not be submitted. Check the information and try again.";
+                return;
+            }
+
+            form.reset();
+            message.textContent = "Ticket submitted successfully.";
+
+            await loadTickets();
+        });
+
+        loadTickets();
+    </script>
+</body>
+</html>

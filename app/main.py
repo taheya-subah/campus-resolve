@@ -1,4 +1,7 @@
+from pathlib import Path
+
 from fastapi import FastAPI, status
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 app = FastAPI(
@@ -6,6 +9,10 @@ app = FastAPI(
     description="API for managing campus IT support tickets.",
     version="0.1.0",
 )
+
+# Find the main project folder regardless of where the command is run.
+BASE_DIR = Path(__file__).resolve().parent.parent
+INDEX_FILE = BASE_DIR / "static" / "index.html"
 
 
 class TicketCreate(BaseModel):
@@ -20,9 +27,10 @@ class TicketCreate(BaseModel):
 tickets: list[dict] = []
 
 
-@app.get("/")
-def read_root() -> dict[str, str]:
-    return {"message": "CampusResolve API is running"}
+@app.get("/", include_in_schema=False)
+def show_homepage() -> FileResponse:
+    """Display the ticket submission webpage."""
+    return FileResponse(INDEX_FILE)
 
 
 @app.get("/health")
@@ -40,7 +48,6 @@ def create_ticket(ticket: TicketCreate) -> dict:
     }
 
     tickets.append(new_ticket)
-
     return new_ticket
 
 
